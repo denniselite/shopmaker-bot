@@ -23,7 +23,8 @@ DEPS_PKGS 		:=	gopkg.in/yaml.v2 \
                     github.com/lib/pq \
                     github.com/gin-gonic/gin \
                     gopkg.in/DATA-DOG/go-sqlmock.v1 \
-                    github.com/streadway/amqp
+                    github.com/streadway/amqp \
+                    gopkg.in/telegram-bot-api.v4
 
 # packages for testing
 TEST_PKGS		:=	$(LIBS_PKGS) $(MAIN_PKGS)
