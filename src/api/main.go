@@ -69,16 +69,23 @@ func main() {
 		log.Panic(err)
 	}
 	postgres := &gorp.DbMap{Db: db, Dialect: gorp.PostgresDialect{}}
-	_, err = postgres.Exec("SET SCHEMA 'public'")
+	_, err = postgres.Exec("CREATE SCHEMA IF NOT EXISTS public")
 	if err != nil {
 		log.Panic(err)
 	}
 	log.Println("Postgres connected...")
+	postgres.AddTableWithNameAndSchema(TextNotice{}, "public", "notices")
+	postgres.AddTableWithNameAndSchema(User{}, "public", "users")
+	err = postgres.CreateTablesIfNotExists()
+	if err != nil {
+		log.Panic(err)
+	}
+	log.Println("Relations initiated...")
 	_, err = amqp.Dial(configurator.RabbitMQConnectionString)
 	if err != nil {
 		log.Panic(err)
 	}
 	log.Println("RabbitMQ connected...")
-	go botRouter(bot)
+	go botRouter(bot, postgres)
 	r.Run(configurator.Port)
 }
