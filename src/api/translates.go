@@ -81,6 +81,38 @@ var Translates = map[string]map[string]string{
 		"en" : "Trying to read notice by wrong ID.\nYou can use command \"/readNotice 1\" to read notice with ID = 1",
 		"ru" : "Попытка найти заметку по неверному ID.\nВы можете использовать команду \"/readNotice 1\" для чтения заметки с ID = 1",
 	},
+	"Language" : {
+		"en" : "Language",
+		"ru" : "Язык",
+	},
+	"Installed" : {
+		"en" : "Installed",
+		"ru" : "Установлен",
+	},
+	"english" : {
+		"en" : "english",
+		"ru" : "английский",
+	},
+	"russian" : {
+		"en" : "russian",
+		"ru" : "русский",
+	},
+	"English" : {
+		"en" : "English",
+		"ru" : "Английский",
+	},
+	"Russian" : {
+		"en" : "Russian",
+		"ru" : "Русский",
+	},
+	"language" : {
+		"en" : "language",
+		"ru" : "язык",
+	},
+	"Help" : {
+		"en" : "Help",
+		"ru" : "Помощь",
+	},
 }
 
 func GetTranslate(key string, lang string) string {

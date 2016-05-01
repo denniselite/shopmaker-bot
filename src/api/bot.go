@@ -26,8 +26,31 @@ func botRouter(bot *tgbotapi.BotAPI, postgres *gorp.DbMap)  {
 func handleCallbackQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update, postgres *gorp.DbMap)  {
 	lang := checkUserGetLang(update.CallbackQuery.From.ID, postgres)
 	switch update.CallbackQuery.Data  {
-	case "tapped" :
-		c := tgbotapi.NewCallback(update.CallbackQuery.ID, GetTranslate("Tapped", lang))
+	case "set_russian" :
+		err := setUserLang(update.CallbackQuery.From.ID, "ru", postgres)
+		if err != nil {
+			log.Printf("+%v\n", err)
+		} else {
+			lang = checkUserGetLang(update.CallbackQuery.From.ID, postgres)
+			userAlert := GetTranslate("Installed", lang) + " " + GetTranslate("russian", lang) + " " + GetTranslate("language", lang)
+			c := tgbotapi.NewCallback(update.CallbackQuery.ID, userAlert)
+			bot.AnswerCallbackQuery(c)
+		}
+	case "set_english" :
+		err := setUserLang(update.CallbackQuery.From.ID, "en", postgres)
+		if err != nil {
+			log.Printf("+%v\n", err)
+		} else {
+			lang = checkUserGetLang(update.CallbackQuery.From.ID, postgres)
+			userAlert := GetTranslate("Installed", lang) + " " + GetTranslate("english", lang) + " " + GetTranslate("language", lang)
+			c := tgbotapi.NewCallback(update.CallbackQuery.ID, userAlert)
+			bot.AnswerCallbackQuery(c)
+		}
+	case "help" :
+		msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, "Help page")
+		bot.Send(msg)
+		c := tgbotapi.NewCallback(update.CallbackQuery.ID, "")
+		c.ShowAlert = false
 		bot.AnswerCallbackQuery(c)
 	default:
 		id, err := strconv.Atoi(update.CallbackQuery.Data)
@@ -65,16 +88,11 @@ func handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update, postgres *gorp.
 	command := update.Message.Command()
 	switch command {
 	case "start":
-		buttonAuthor := tgbotapi.NewInlineKeyboardButtonURL(GetTranslate("Author", lang), "https://denniselite.me");
-		buttonTapMe := tgbotapi.NewInlineKeyboardButtonData(GetTranslate("Tap me", lang), "tapped")
-		var buttonsSet []tgbotapi.InlineKeyboardButton
-		buttonsSet = append(buttonsSet, buttonAuthor)
-		buttonsSetPrivate := make([]tgbotapi.InlineKeyboardButton, len(buttonsSet))
-		buttonsSetPrivate = append([]tgbotapi.InlineKeyboardButton(nil), buttonsSet...)
-		buttonsSetPrivate = append(buttonsSet, buttonTapMe)
-		m := tgbotapi.NewInlineKeyboardMarkup(buttonsSet)
+		var m tgbotapi.InlineKeyboardMarkup
 		if update.Message.Chat.IsPrivate() {
-			m = tgbotapi.NewInlineKeyboardMarkup(buttonsSetPrivate)
+			m = getStartKeyboardMarkup(lang, true)
+		} else {
+			m = getStartKeyboardMarkup(lang, false)
 		}
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, GetTranslate("Welcome to shopmaker bot! Menu:\n", lang) + "/about - " + GetTranslate("about Shopmaker bot\n", lang) + "/saveNotice - " + GetTranslate("save a notice\n", lang) + "/readNotice - " + GetTranslate("read a saved notice", lang))
 		msg.ReplyMarkup = m
@@ -146,4 +164,39 @@ func checkUserGetLang(userId int, postgres *gorp.DbMap) (lang string) {
 	}
 	lang = user.Lang
 	return
+}
+
+func setUserLang(userId int, lang string, postgres *gorp.DbMap) error {
+	user := new(User)
+	err := postgres.SelectOne(&user, "SELECT * FROM users WHERE id=$1", userId)
+	if err != nil {
+		return err
+	}
+	if user.Lang != lang {
+		user.Lang = lang
+		_, err = postgres.Update(user)
+	}
+	return err
+}
+
+func getStartKeyboardMarkup(lang string, isPrivate bool) tgbotapi.InlineKeyboardMarkup {
+	buttonAuthor := tgbotapi.NewInlineKeyboardButtonURL(GetTranslate("Author", lang), "https://denniselite.me");
+	buttonHelp := tgbotapi.NewInlineKeyboardButtonData(GetTranslate("Help", lang), "help");
+	var publicRow []tgbotapi.InlineKeyboardButton
+	var privateRow []tgbotapi.InlineKeyboardButton
+	publicRow = append(publicRow, buttonAuthor)
+	publicRow = append(publicRow, buttonHelp)
+	if isPrivate {
+		buttonEnglishLanguage := tgbotapi.NewInlineKeyboardButtonData(GetTranslate("English", lang), "set_english")
+		buttonRussianLanguage := tgbotapi.NewInlineKeyboardButtonData(GetTranslate("Russian", lang), "set_russian")
+		var buttonsSetPrivate []tgbotapi.InlineKeyboardButton
+		buttonsSetPrivate = append(buttonsSetPrivate, buttonEnglishLanguage)
+		buttonsSetPrivate = append(buttonsSetPrivate, buttonRussianLanguage)
+		privateRow = buttonsSetPrivate
+	}
+	if len(privateRow) > 0 {
+		return tgbotapi.NewInlineKeyboardMarkup(privateRow, publicRow)
+	} else {
+		return tgbotapi.NewInlineKeyboardMarkup(publicRow)
+	}
 }
